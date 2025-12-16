@@ -1,0 +1,14 @@
+# Ignore compiled object files
+*.o
+*.obj
+
+# Ignore caches and local files
+cache.txt
+weather_cache.json
+
+# Ignore local directories
+vader/
+
+# Optional: Windows executables
+*.exe
+*.dll
