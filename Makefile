@@ -1,20 +1,32 @@
-CC = gcc                     # Definierar GCC som kompilator
-CFLAGS = -Wall -std=c11      # Definierar kompileringsflaggor
-LDFLAGS = -lcurl             # Definierar länkarflaggor (CURL-biblioteket)
-TARGET = vader               # Definierar namn på körbar fil
+# Kompilator och flaggor
+CC = gcc
+CFLAGS = -Wall -std=c11   #flaggar alla error i terminalen
+LDFLAGS = -lcurl -ljansson #flaggar alla error från json
 
-all: $(TARGET)               # Standardmål: bygger programmet
+# Körbar fil (./vader)
+TARGET = vader
 
-$(TARGET): main.o weather.o  # Regel för att länka objektfiler
-	$(CC) $^ -o $@ $(LDFLAGS)  # Kommando för att länka
+# Alla källfiler
+SRC = main.c weather.c json_parser.c
+OBJ = $(SRC:.c=.o) //skapa objekfiler 
 
-%.o: %.c weather.h           # Regel för att kompilera .c-filer
-	$(CC) $(CFLAGS) -c $< -o $@  # Kommando för att kompilera
+# Standardmål: bygga programmet
+all: $(TARGET)
 
-clean:                       # Mål för att rensa byggfiler
-	rm -f *.o $(TARGET) cache.txt  # Tar bort objektfiler, körbar fil och cache
+# Länkning av objektfiler till körbar fil
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) -o $@ $(LDFLAGS) 
 
-run: $(TARGET)               # Mål för att bygga och köra
-	./$(TARGET)              # 0Kommando för att köra programmet
+# Kompilering av .c-filer till .o-filer
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: all clean run        # Markerar dessa mål som "phony" (inte filnamn)
+# Rensa byggfiler och cache
+clean:
+	rm -f $(OBJ) $(TARGET) cache.txt
+
+# Bygg och kör programmet
+run: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean run

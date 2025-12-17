@@ -1,130 +1,117 @@
-#include <stdio.h>          // Inkluderar standard I/O-funktioner
-#include <stdlib.h>         // Inkluderar minneshanteringsfunktioner
-#include <string.h>         // Inkluderar stränghanteringsfunktioner
-#include <curl/curl.h>      // Inkluderar CURL-biblioteket för internet
-#include <time.h>           // Inkluderar tidsfunktioner
-#include "weather.h"        // Inkluderar vår egen header-fil
+#include <stdio.h>      // Standard in-/utmatning (printf, scanf)
+#include <stdlib.h>     // Minneshantering (malloc, realloc, free)
+#include <string.h>     // Strängfunktioner (memcpy, snprintf)
+#include <curl/curl.h>  // CURL-bibliotek för HTTP-anrop
+#include "weather.h"    // Egna strukturer och konstanter (City, CITY_COUNT, URL_SIZE)
+#include "json_parser.h"  // Funktion för att skriva ut väder från JSON
 
-City cities[CITY_COUNT] = { // Definierar och initierar array med städer
-    {"Stockholm", 59.3293, 18.0686},   // Initierar första staden
-    {"Göteborg", 57.7089, 11.9746},    // Initierar andra staden
-    {"Malmö", 55.6050, 13.0038},       // Initierar tredje staden
-    {"Uppsala", 59.8586, 17.6389},     // Initierar fjärde staden
-    {"Västerås", 59.6099, 16.5448},    // Initierar femte staden
-    {"Örebro", 59.2741, 15.2066},      // Initierar sjätte staden
-    {"Linköping", 58.4109, 15.6216},   // Initierar sjunde staden
-    {"Helsingborg", 56.0465, 12.6945}, // Initierar åttonde staden
-    {"Jönköping", 57.7815, 14.1562},   // Initierar nionde staden
-    {"Norrköping", 58.5877, 16.1924},  // Initierar tionde staden
-    {"Lund", 55.7047, 13.1910},        // Initierar elfte staden
-    {"Gävle", 60.6749, 17.1413},       // Initierar tolfte staden
-    {"Sundsvall", 62.3908, 17.3069},   // Initierar trettonde staden
-    {"Umeå", 63.8258, 20.2630},        // Initierar fjortonde staden
-    {"Luleå", 65.5848, 22.1567},       // Initierar femtonde staden
-    {"Kiruna", 67.8558, 20.2253}       // Initierar sextonde staden
+// Definierar alla städer och deras koordinater i en array
+City cities[CITY_COUNT] = {
+    {"Stockholm", 59.3293, 18.0686},
+    {"Göteborg", 57.7089, 11.9746},
+    {"Malmö", 55.6050, 13.0038},
+    {"Uppsala", 59.8586, 17.6389},
+    {"Västerås", 59.6099, 16.5448},
+    {"Örebro", 59.2741, 15.2066},
+    {"Linköping", 58.4109, 15.6216},
+    {"Helsingborg", 56.0465, 12.6945},
+    {"Jönköping", 57.7815, 14.1562},
+    {"Norrköping", 58.5877, 16.1924},
+    {"Lund", 55.7047, 13.1910},
+    {"Gävle", 60.6749, 17.1413},
+    {"Sundsvall", 62.3908, 17.3069},
+    {"Umeå", 63.8258, 20.2630},
+    {"Luleå", 65.5848, 22.1567},
+    {"Kiruna", 67.8558, 20.2253}
 };
 
-size_t curl_callback(void *data, size_t size, size_t nmemb, void *userp) {  // CURL callback-funktion
-    size_t total = size * nmemb;          // Beräknar total storlek på inkommande data
-    MemBuffer *buf = (MemBuffer*)userp;   // Konverterar userp till vår MemBuffer-struct
-    
-    char *new = realloc(buf->data, buf->size + total + 1);  // Allokerar mer minne på heapen
-    if (!new) return 0;                   // Returnerar 0 om minnesallokering misslyckades
-    
-    buf->data = new;                      // Uppdaterar pekaren till det nya minnet
-    memcpy(buf->data + buf->size, data, total);  // Kopierar ny data till slutet av gamla
-    buf->size += total;                   // Uppdaterar total storlek
-    buf->data[buf->size] = '\0';          // Lägger till null-terminator
-    
-    return total;                         // Returnerar antal hanterade bytes till CURL
-}
-
-void show_menu(void) {                    // Funktion för att visa huvudmenyn
-    printf("\n=== VÄDERPROGRAM ===\n");   // Skriver ut programtiteln
-    for (int i = 0; i < CITY_COUNT; i++) {  // Loopar genom alla städer
-        printf("%2d. %s\n", i+1, cities[i].name);  // Skriver ut nummer och stad
+// Skriver ut rubrik och listar alla städer i arrayen
+int visa_vader()
+{
+    int antal_städer = sizeof(cities) / sizeof(cities[0]); // Beräknar antal städer i arrayen
+    printf("\n=== VÄDERPROGRAM ===\n");                      // Skriver ut programrubrik
+    for (int i = 0; i < antal_städer; i++)                  // Loopar igenom alla städer
+    {
+        printf("%2d. %s\n\n", i + 1, cities[i].name);       // Skriver ut stadens nummer och namn
     }
+    return 0;                                               // Avslutar funktionen korrekt
 }
 
-int get_choice(void) {                    // Funktion för att läsa användarens val
-    int choice;                           // Variabel för att lagra valet
-    printf("\nVälj stad (1-%d): ", CITY_COUNT);  // Ber användaren välja stad
-    scanf("%d", &choice);                 // Läser ett heltal från tangentbordet
-    getchar();                            // Rensar newline-tecken från bufferten
-    
-    if (choice < 1 || choice > CITY_COUNT) {  // Kontrollerar om valet är giltigt
-        printf("Ogiltigt val, använder 1.\n");  // Meddelar om ogiltigt val
-        return 1;                           // Returnerar standardvärde (Stockholm)
+// Struktur som används för att lagra data som hämtas med CURL
+typedef struct {
+    char *data;        // Pekare till buffert där data lagras
+    size_t storlek;    // Hur mycket data som lagrats hittills
+} Buffert;
+
+// Callback-funktion som CURL anropar när data tas emot
+size_t curl_callback(void *data, size_t size, size_t nmemb, void *userp) {
+    size_t total = size * nmemb;            // Total mängd mottagen data i byte
+    Buffert *buf = (Buffert*)userp;         // Pekare till vår buffertstruktur
+
+    // Utökar bufferten för att få plats med ny data
+    char *ny = realloc(buf->data, buf->storlek + total + 1);
+    if (!ny) return 0;                       // Avbryt om minnesallokering misslyckas
+
+    buf->data = ny;                          // Uppdaterar buffertpekaren
+    memcpy(buf->data + buf->storlek, data, total); // Kopierar in ny data
+    buf->storlek += total;                  // Uppdaterar buffertens storlek
+    buf->data[buf->storlek] = '\0';          // Nullterminerar strängen
+
+    return total;                            // Returnerar antal byte som hanterats
+}
+
+// Låter användaren välja stad via menyval
+int valjstad(void) {
+    int val;
+    printf("Välj stad (1-%d): ", CITY_COUNT); // Visar giltigt intervall
+    if (scanf("%d", &val) != 1) {              // Kontrollerar att inmatningen är ett tal
+        while (getchar() != '\n');             // Tömmer inmatningsbufferten
+        return 1;                              // Standardval: Stockholm
     }
-    return choice;                         // Returnerar det giltiga valet
-}
-
-int check_cache(int city_idx, Cache *cache) {  // Funktion för att kontrollera cache
-    FILE *f = fopen(CACHE_FILE, "r");      // Öppnar cache-filen för läsning
-    if (!f) return 0;                      // Returnerar 0 om filen inte finns
-    
-    fscanf(f, "%s %ld %[^\n]", cache->city, &cache->time, cache->json);  // Läser cache-data
-    fclose(f);                             // Stänger filen
-    
-    if (strcmp(cache->city, cities[city_idx].name) != 0) return 0;  // Kollar om rätt stad
-    if (time(NULL) - cache->time > CACHE_MAX_AGE) return 0;  // Kollar om cache är för gammal
-    
-    printf("Hittade cachad data (%.0f min gammal). Använda? (j/n): ",  // Frågar användaren
-           (time(NULL) - cache->time) / 60.0);  // Visar cache-ålder i minuter
-    
-    char answer;                           // Variabel för användarens svar
-    scanf("%c", &answer);                  // Läser ett tecken från tangentbordet
-    getchar();                             // Rensar bufferten
-    return (answer == 'j' || answer == 'J');  // Returnerar 1 om ja, annars 0
-}
-
-void save_cache(int city_idx, const char *json) {  // Funktion för att spara cache
-    FILE *f = fopen(CACHE_FILE, "w");      // Öppnar cache-filen för skrivning
-    if (!f) return;                        // Avbryt om filen inte kunde öppnas
-    fprintf(f, "%s %ld %s\n", cities[city_idx].name, time(NULL), json);  // Skriver cache
-    fclose(f);                             // Stänger filen
-}
-
-void get_weather(int choice) {             // Huvudfunktion för att hämta väder
-    int idx = choice - 1;                  // Konverterar val (1-16) till index (0-15)
-    Cache cache;                           // Skapar Cache-struct för cachad data
-    
-    if (check_cache(idx, &cache)) {        // Kontrollerar om cachad data finns och är giltig
-        printf("\n=== Väder för %s ===\n", cache.city);  // Skriver ut rubrik
-        printf("%s\n", cache.json);        // Skriver ut cachad JSON-data
-        return;                            // Avslutar funktionen (använder cache)
+    if (val < 1 || val > CITY_COUNT) {         // Kontrollerar att valet är giltigt
+        printf("Ogiltigt val. Använder standard: Stockholm\n");
+        return 1;
     }
-    
-    char url[URL_SIZE];                    // Array för att bygga URL
-    snprintf(url, sizeof(url),             // Bygger API-URL med koordinater
+    return val;                                // Returnerar användarens val
+}
+
+// Hämtar väderdata för vald stad från Open-Meteo API
+void ta_vader(int choice) {
+    int idx = choice - 1;                      // Omvandlar till 0-baserat index
+    char url[URL_SIZE];                        // Buffert för API-URL
+
+    // Skapar URL med vald stads latitud och longitud
+    snprintf(url, sizeof(url),
              "https://api.open-meteo.com/v1/forecast?"
              "latitude=%.4f&longitude=%.4f&current_weather=true",
              cities[idx].lat, cities[idx].lon);
-    
-    CURL *curl = curl_easy_init();         // Initierar CURL-session
-    if (!curl) {                           // Kontrollerar om CURL initierades
-        printf("Fel: Kan inte ansluta.\n");  // Skriver felmeddelande
-        return;                            // Avslutar funktionen
+
+    CURL *curl = curl_easy_init();              // Initierar CURL
+    if (!curl) {
+        printf("Fel: Kan inte ansluta.\n");
+        return;
     }
-    
-    MemBuffer buf = {NULL, 0};             // Initierar MemBuffer med NULL och storlek 0
-    buf.data = malloc(1);                  // Allokerar 1 byte initialt minne
-    
-    curl_easy_setopt(curl, CURLOPT_URL, url);  // Sätter URL för CURL
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);  // Sätter callback-funktion
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);  // Skickar pekare till vår buffer
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);  // Sätter timeout till 5 sekunder
-    
-    printf("Hämtar väder för %s...\n", cities[idx].name);  // Informerar användaren
-    
-    if (curl_easy_perform(curl) == CURLE_OK && buf.data) {  // Utför HTTP-anrop och kontrollerar resultat
-        printf("\n=== Väder för %s ===\n", cities[idx].name);  // Skriver ut rubrik
-        printf("%s\n", buf.data);           // Skriver ut JSON-data från API
-        save_cache(idx, buf.data);          // Sparar datan i cache för framtiden
+
+    Buffert buf = {NULL, 0};                    // Initierar buffert
+    buf.data = malloc(1);                       // Allokerar startminne
+
+    // Ställer in CURL-alternativ
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+
+    printf("Hämtar väderdata för %s...\n", cities[idx].name); // Statusmeddelande
+
+    // Utför HTTP-anropet och skriver ut väder om det lyckas
+    if (curl_easy_perform(curl) == CURLE_OK && buf.data) {
+        skriv_ut_väder_json(buf.data);          // Tolkar och skriver ut JSON-data
     } else {
-        printf("Kunde inte hämta data.\n");  // Meddelar om misslyckat anrop
+        printf("Kunde inte hämta data.\n");
     }
-    
-    curl_easy_cleanup(curl);                // Städar upp CURL-resurser
-    free(buf.data);                         // Frigör minnet på heapen
+
+    curl_easy_cleanup(curl);                    // Städar upp CURL
+    free(buf.data);                             // Frigör buffertminne
 }
+
+// Visar huvudmeny med alla städer
