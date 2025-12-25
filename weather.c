@@ -29,8 +29,8 @@ City cities[CITY_COUNT] = {
 int visa_vader()
 {
     int antal_städer = sizeof(cities) / sizeof(cities[0]); // Beräknar antal städer i arrayen
-    printf("\n=== VÄDERPROGRAM ===\n");                      // Skriver ut programrubrik
-    for (int i = 0; i < antal_städer; i++)                  // Loopar igenom alla städer
+    printf("\n=== VÄDERPROGRAM ===\n");                      // Skriver ut programrubrik det som användaren ser precis innan.
+    for (int i = 0; i < antal_städer; i++)                  // Loopar igenom alla städer som finns i arrayen
     {
         printf("%2d. %s\n\n", i + 1, cities[i].name);       // Skriver ut stadens nummer och namn
     }
@@ -62,15 +62,19 @@ size_t curl_callback(void *data, size_t size, size_t nmemb, void *userp) {
 
 // Låter användaren välja stad via menyval
 int valjstad(void) {
-    int val;
+    int val=0;
+    while (1)
+    {
     printf("Välj stad (1-%d): ", CITY_COUNT); // Visar giltigt intervall
     if (scanf("%d", &val) != 1) {              // Kontrollerar att inmatningen är ett tal
         while (getchar() != '\n');             // Tömmer inmatningsbufferten
         return 1;                              // Standardval: Stockholm
     }
     if (val < 1 || val > CITY_COUNT) {         // Kontrollerar att valet är giltigt
-        printf("Ogiltigt val. Använder standard: Stockholm\n");
-        return 1;
+        printf("Ogiltigt val. Försök igen: \n ");
+        continue; 
+    }
+    break;
     }
     return val;                                // Returnerar användarens val
 }
@@ -105,13 +109,13 @@ void ta_vader(int choice) {
 
     // Utför HTTP-anropet och skriver ut väder om det lyckas
     if (curl_easy_perform(curl) == CURLE_OK && buf.data) {
-        skriv_ut_väder_json(buf.data);          // Tolkar och skriver ut JSON-data
+        skriv_ut_väder_json(buf.data);          // Tolkar och skriver ut JSON-data för användare ska hen kan få text istället för json utskrivt. 
     } else {
         printf("Kunde inte hämta data.\n");
     }
 
-    curl_easy_cleanup(curl);                    // Städar upp CURL
-    free(buf.data);                             // Frigör buffertminne
+    curl_easy_cleanup(curl);                    // Städar upp CURL som har använd
+    free(buf.data);                             // Frigör buffertminne så att det inte tar onödig plats
 }
 
 // Visar huvudmeny med alla städer

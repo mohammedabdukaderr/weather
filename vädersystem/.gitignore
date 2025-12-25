@@ -1,0 +1,54 @@
+# Build directories
+build/
+cmake-build-*/
+
+# Executables
+*.exe
+*.out
+vaderserver
+vaderklient_c
+vaderklient_cpp
+test_protokoll
+
+# Object files
+*.o
+*.obj
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Cache directory
+cache/
+
+# Log files
+*.log
+vaderserver.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Temp files
+temp_weather_project/
+
+# API keys (important!)
+api_key.txt
+.api_key
+*.key
+secrets.txt
+Server/.api_key
