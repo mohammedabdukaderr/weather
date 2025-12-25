@@ -1,0 +1,295 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                  VÄDERSYSTEM - INSTALLATIONSGUIDE                 ║
+║                          Version 1.0.0                            ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+VIKTIGT: Läs hela denna fil innan du börjar!
+
+═══════════════════════════════════════════════════════════════════
+
+STEG 1: SKAFFA OPENWEATHERMAP API-NYCKEL
+─────────────────────────────────────────
+
+1. Gå till: https://openweathermap.org/api
+2. Klicka "Sign Up" och skapa ett gratis konto
+3. Bekräfta din email
+4. Gå till: https://home.openweathermap.org/api_keys
+5. Kopiera din API-nyckel (lång sträng med bokstäver och siffror)
+
+⚠️  VIKTIGT: Det kan ta upp till 2 timmar innan nyckeln aktiveras!
+
+Spara din API-nyckel säkert, du behöver den i STEG 4.
+
+═══════════════════════════════════════════════════════════════════
+
+STEG 2: INSTALLERA BYGGVERKTYG
+───────────────────────────────
+
+▸ WINDOWS (Välj EN av metoderna nedan):
+
+  Metod A - Visual Studio (Rekommenderas för Windows):
+  ──────────────────────────────────────────────────
+  1. Ladda ner Visual Studio Community (gratis):
+     https://visualstudio.microsoft.com/downloads/
+
+  2. Under installation, välj:
+     ☑ "Desktop development with C++"
+
+  3. Installera CMake:
+     https://cmake.org/download/
+     (Välj "Add CMake to system PATH for all users")
+
+  Metod B - MinGW:
+  ───────────────
+  1. Installera MSYS2: https://www.msys2.org/
+  2. Öppna MSYS2 terminal och kör:
+     pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make
+  3. Lägg till C:\msys64\mingw64\bin i PATH
+
+
+▸ LINUX (Ubuntu/Debian):
+  ──────────────────────
+  Öppna terminal och kör:
+
+  sudo apt update
+  sudo apt install build-essential cmake
+
+═══════════════════════════════════════════════════════════════════
+
+STEG 3: BYGG PROJEKTET
+───────────────────────
+
+▸ WINDOWS (Visual Studio):
+
+  1. Öppna Command Prompt
+
+  2. Navigera till projektkatalogen:
+     cd C:\Users\moham\Downloads\mohammed\vädersystem
+
+  3. Skapa build-katalog:
+     mkdir build
+     cd build
+
+  4. Generera projekt:
+     cmake ..
+
+  5. Bygg:
+     cmake --build . --config Release
+
+
+▸ WINDOWS (MinGW):
+
+  1. Öppna MSYS2 MINGW64 terminal
+
+  2. Navigera till projektet:
+     cd /c/Users/moham/Downloads/mohammed/vädersystem
+
+  3. Bygg:
+     mkdir build && cd build
+     cmake .. -G "MinGW Makefiles"
+     make
+
+
+▸ LINUX:
+
+  1. Öppna terminal
+
+  2. Navigera till projektet:
+     cd ~/Downloads/vädersystem  (eller din sökväg)
+
+  3. Bygg:
+     mkdir build && cd build
+     cmake ..
+     make
+
+═══════════════════════════════════════════════════════════════════
+
+STEG 4: STARTA SERVERN
+───────────────────────
+
+▸ WINDOWS:
+
+  cd build\Server\Release
+  vaderserver.exe <DIN-API-NYCKEL>
+
+  Eller med MinGW:
+  cd build/Server
+  ./vaderserver.exe <DIN-API-NYCKEL>
+
+
+▸ LINUX:
+
+  cd build/Server
+  ./vaderserver <DIN-API-NYCKEL>
+
+
+Ersätt <DIN-API-NYCKEL> med din faktiska nyckel från STEG 1!
+
+Exempel:
+  ./vaderserver a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+
+
+FÖRVÄNTAD OUTPUT:
+──────────────────
+[2025-12-25 15:30:00] [INFO] main.c:123 - === Vädersystem Server ===
+[2025-12-25 15:30:00] [INFO] main.c:124 - Startar server på port 8080
+[2025-12-25 15:30:00] [INFO] cache.c:45 - Skapade cache-katalog: ./cache
+[2025-12-25 15:30:00] [INFO] tcp_server.c:78 - TCP-server lyssnar på port 8080
+[2025-12-25 15:30:00] [INFO] main.c:156 - Server lyssnar. Tryck Ctrl+C för att stoppa.
+
+✓ SERVERN ÄR NU IGÅNG! Lämna detta terminalfönster öppet.
+
+═══════════════════════════════════════════════════════════════════
+
+STEG 5: STARTA KLIENTEN (Öppna nytt terminalfönster!)
+──────────────────────────────────────────────────────
+
+▸ WINDOWS (Visual Studio):
+
+  cd build\klient_c\Release
+  vaderklient_c.exe
+
+
+▸ WINDOWS (MinGW):
+
+  cd build/klient_c
+  ./vaderklient_c.exe
+
+
+▸ LINUX:
+
+  cd build/klient_c
+  ./vaderklient_c
+
+
+ANVÄNDNING:
+───────────
+
+  Välj alternativ:
+    1. Hämta aktuellt väder
+    2. Hämta väderprognos
+    3. Avsluta
+  Val: 1
+
+  Ange stad: Stockholm
+  Ange landskod (ex: SE, US, GB): SE
+
+  [Väderdata visas här]
+
+
+TESTA MED ANDRA STÄDER:
+────────────────────────
+  - Göteborg, SE
+  - London, GB
+  - Paris, FR
+  - New York, US
+  - Tokyo, JP
+
+═══════════════════════════════════════════════════════════════════
+
+FELSÖKNING
+──────────
+
+▸ Problem: "cmake: command not found"
+
+  Lösning (Windows):
+  - Installera CMake från cmake.org
+  - Eller använd choco: choco install cmake
+
+  Lösning (Linux):
+  sudo apt install cmake
+
+
+▸ Problem: "Kunde inte ansluta till server"
+
+  Kontrollera:
+  1. Servern körs (se STEG 4)
+  2. Rätt IP och port (standard: 127.0.0.1:8080)
+  3. Brandväggen blockerar inte port 8080
+
+
+▸ Problem: "API-fel" från servern
+
+  Orsaker:
+  1. API-nyckeln inte aktiverad än (vänta 2 timmar)
+  2. Felaktig API-nyckel (dubbelkolla på openweathermap.org)
+  3. Ingen internetanslutning
+  4. Staden finns inte i API:et (testa med engelska namn)
+
+
+▸ Problem: "Permission denied" på Linux
+
+  Lösning:
+  chmod +x build/Server/vaderserver
+  chmod +x build/klient_c/vaderklient_c
+
+
+▸ Problem: Port 8080 redan används
+
+  Lösning:
+  Starta servern på annan port:
+  ./vaderserver API_KEY 9000
+
+  Och anslut klient till samma port:
+  ./vaderklient_c 127.0.0.1 9000
+
+═══════════════════════════════════════════════════════════════════
+
+AVANCERADE FUNKTIONER
+──────────────────────
+
+▸ Ändra Loggningsnivå:
+
+  ./vaderserver API_KEY 8080 0    # DEBUG (mycket detaljer)
+  ./vaderserver API_KEY 8080 1    # INFO (standard)
+  ./vaderserver API_KEY 8080 2    # VARNING
+  ./vaderserver API_KEY 8080 3    # FEL (minimal)
+
+
+▸ Anslut från Annan Dator:
+
+  1. På serverdatorn:
+     - Hitta IP: ipconfig (Windows) eller ip addr (Linux)
+     - Öppna port 8080 i brandväggen
+     - Starta servern
+
+  2. På klientdatorn:
+     ./vaderklient_c 192.168.1.100 8080
+     (Byt 192.168.1.100 mot serverns IP)
+
+
+▸ Använd C++-Klient:
+
+  Windows: build\klient_cpp\Release\vaderklient_cpp.exe
+  Linux:   build/klient_cpp/vaderklient_cpp
+
+
+▸ Kör Tester:
+
+  Windows: build\tests\Release\test_protokoll.exe
+  Linux:   build/tests/test_protokoll
+
+═══════════════════════════════════════════════════════════════════
+
+NÄSTA STEG
+──────────
+
+✓ Läs fullständig dokumentation: docs/README.md
+✓ API-guide: docs/API_GUIDE.md
+✓ Detaljerad användarguide: docs/ANVANDNING.md
+
+═══════════════════════════════════════════════════════════════════
+
+SUPPORT
+───────
+
+Vid problem, kontrollera:
+1. Denna fil (INSTALLERA.txt)
+2. docs/ANVANDNING.md
+3. docs/README.md
+
+Email: [din.email@example.com]
+
+═══════════════════════════════════════════════════════════════════
+
+Lycka till! 🌤️

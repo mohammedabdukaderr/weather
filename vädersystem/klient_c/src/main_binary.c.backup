@@ -1,0 +1,240 @@
+#include "vaderprotokoll.h"
+#include "natverks_abstraktion.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define SERVER_ADRESS "127.0.0.1"  // Localhost som standard
+#define SERVER_PORT 8080
+
+// Visa väderdata i terminalen
+void visa_vader_data(const VaderData* data) {
+    printf("\n");
+    printf("╔═══════════════════════════════════════════════════════╗\n");
+    printf("║             AKTUELLT VÄDER - %s\n", data->stad);
+    printf("╠═══════════════════════════════════════════════════════╣\n");
+    printf("║  🌡️  Temperatur:    %.1f°C\n", data->temperatur);
+    printf("║  💧  Luftfuktighet:  %.0f%%\n", data->luftfuktighet);
+    printf("║  💨  Vindhastighet:  %.1f m/s\n", data->vindhastighet);
+    printf("║  📊  Lufttryck:      %.0f hPa\n", data->lufttryck);
+    printf("║  ☁️  Beskrivning:    %s\n", data->beskrivning);
+    printf("╚═══════════════════════════════════════════════════════╝\n");
+    printf("\n");
+}
+
+// Visa prognos i terminalen
+void visa_prognos(const VaderPrognos* prognos) {
+    printf("\n");
+    printf("╔═══════════════════════════════════════════════════════╗\n");
+    printf("║             VÄDERPROGNOS\n");
+    printf("╠═══════════════════════════════════════════════════════╣\n");
+
+    for (int i = 0; i < prognos->antal_dagar && i < 5; i++) {
+        const VaderData* dag = &prognos->dagar[i];
+        printf("║ Dag %d: %.1f°C - %s\n",
+               i + 1, dag->temperatur, dag->beskrivning);
+    }
+
+    printf("╚═══════════════════════════════════════════════════════╝\n");
+    printf("\n");
+}
+
+// Anslut till server
+socket_t anslut_till_server(const char* server_adress, int port) {
+    socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == OGILTIG_SOCKET) {
+        fprintf(stderr, "FEL: Kunde inte skapa socket\n");
+        return OGILTIG_SOCKET;
+    }
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons((uint16_t)port);
+
+#ifdef _WIN32
+    server_addr.sin_addr.s_addr = inet_addr(server_adress);
+#else
+    inet_pton(AF_INET, server_adress, &server_addr.sin_addr);
+#endif
+
+    printf("Ansluter till server %s:%d...\n", server_adress, port);
+
+    if (connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        fprintf(stderr, "FEL: Kunde inte ansluta till server\n");
+        fprintf(stderr, "Kontrollera att servern körs på %s:%d\n", server_adress, port);
+        stang_socket(sock);
+        return OGILTIG_SOCKET;
+    }
+
+    printf("Ansluten till server!\n");
+    return sock;
+}
+
+// Begär aktuellt väder från server
+bool begär_aktuellt_vader(socket_t sock, const char* stad, const char* landskod) {
+    // Skapa protokollhuvud
+    ProtokollHuvud huvud;
+    huvud.version = PROTOKOLL_VERSION;
+    huvud.typ = MEDDELANDE_HAMTA_VADER;
+    huvud.langd = hton16(sizeof(VaderForfragan));
+
+    // Skapa väderförfrågan
+    VaderForfragan forfragan;
+    memset(&forfragan, 0, sizeof(forfragan));
+    strncpy(forfragan.stad, stad, sizeof(forfragan.stad) - 1);
+    strncpy(forfragan.landskod, landskod, sizeof(forfragan.landskod) - 1);
+
+    // Skicka förfrågan
+    if (send(sock, (char*)&huvud, sizeof(huvud), 0) != sizeof(huvud)) {
+        fprintf(stderr, "FEL: Kunde inte skicka protokollhuvud\n");
+        return false;
+    }
+
+    if (send(sock, (char*)&forfragan, sizeof(forfragan), 0) != sizeof(forfragan)) {
+        fprintf(stderr, "FEL: Kunde inte skicka väderförfrågan\n");
+        return false;
+    }
+
+    // Ta emot svar
+    ProtokollHuvud svar_huvud;
+    if (recv(sock, (char*)&svar_huvud, sizeof(svar_huvud), 0) != sizeof(svar_huvud)) {
+        fprintf(stderr, "FEL: Kunde inte ta emot svarshuvud\n");
+        return false;
+    }
+
+    if (svar_huvud.typ == MEDDELANDE_FEL) {
+        FelMeddelande fel;
+        recv(sock, (char*)&fel, sizeof(fel), 0);
+        fprintf(stderr, "FEL från server: %s (kod: %d)\n", fel.meddelande, fel.felkod);
+        return false;
+    }
+
+    if (svar_huvud.typ != MEDDELANDE_VADER_SVAR) {
+        fprintf(stderr, "FEL: Oväntat svarstyp: %d\n", svar_huvud.typ);
+        return false;
+    }
+
+    // Ta emot väderdata
+    VaderData vader_data;
+    if (recv(sock, (char*)&vader_data, sizeof(vader_data), 0) != sizeof(vader_data)) {
+        fprintf(stderr, "FEL: Kunde inte ta emot väderdata\n");
+        return false;
+    }
+
+    // Visa väderdata
+    visa_vader_data(&vader_data);
+    return true;
+}
+
+// Begär prognos från server
+bool begär_prognos(socket_t sock, const char* stad, const char* landskod) {
+    // Skapa protokollhuvud
+    ProtokollHuvud huvud;
+    huvud.version = PROTOKOLL_VERSION;
+    huvud.typ = MEDDELANDE_HAMTA_PROGNOS;
+    huvud.langd = hton16(sizeof(VaderForfragan));
+
+    // Skapa väderförfrågan
+    VaderForfragan forfragan;
+    memset(&forfragan, 0, sizeof(forfragan));
+    strncpy(forfragan.stad, stad, sizeof(forfragan.stad) - 1);
+    strncpy(forfragan.landskod, landskod, sizeof(forfragan.landskod) - 1);
+
+    // Skicka förfrågan
+    send(sock, (char*)&huvud, sizeof(huvud), 0);
+    send(sock, (char*)&forfragan, sizeof(forfragan), 0);
+
+    // Ta emot svar
+    ProtokollHuvud svar_huvud;
+    recv(sock, (char*)&svar_huvud, sizeof(svar_huvud), 0);
+
+    if (svar_huvud.typ == MEDDELANDE_FEL) {
+        FelMeddelande fel;
+        recv(sock, (char*)&fel, sizeof(fel), 0);
+        fprintf(stderr, "FEL från server: %s\n", fel.meddelande);
+        return false;
+    }
+
+    // Ta emot prognos
+    VaderPrognos prognos;
+    recv(sock, (char*)&prognos, sizeof(prognos), 0);
+
+    // Visa prognos
+    visa_prognos(&prognos);
+    return true;
+}
+
+int main(int argc, char* argv[]) {
+    // Initiera nätverksbibliotek
+    if (initiera_natverksbibliotek() != 0) {
+        fprintf(stderr, "FEL: Kunde inte initialisera nätverksbibliotek\n");
+        return 1;
+    }
+
+    printf("╔═══════════════════════════════════════════════════════╗\n");
+    printf("║          VÄDERSYSTEM - C-KLIENT                       ║\n");
+    printf("╚═══════════════════════════════════════════════════════╝\n\n");
+
+    // Använd kommandoradsargument eller standardvärden
+    const char* server_adress = (argc > 1) ? argv[1] : SERVER_ADRESS;
+    int server_port = (argc > 2) ? atoi(argv[2]) : SERVER_PORT;
+
+    // Interaktiv loop
+    while (1) {
+        printf("\nVälj alternativ:\n");
+        printf("  1. Hämta aktuellt väder\n");
+        printf("  2. Hämta väderprognos\n");
+        printf("  3. Avsluta\n");
+        printf("Val: ");
+
+        int val;
+        if (scanf("%d", &val) != 1) {
+            fprintf(stderr, "Ogiltigt val\n");
+            while (getchar() != '\n');  // Rensa input-buffer
+            continue;
+        }
+        while (getchar() != '\n');  // Rensa newline
+
+        if (val == 3) {
+            break;
+        }
+
+        if (val != 1 && val != 2) {
+            printf("Ogiltigt val, försök igen\n");
+            continue;
+        }
+
+        // Be om stad och landskod
+        char stad[64];
+        char landskod[3];
+
+        printf("Ange stad: ");
+        if (fgets(stad, sizeof(stad), stdin) == NULL) continue;
+        stad[strcspn(stad, "\n")] = '\0';  // Ta bort newline
+
+        printf("Ange landskod (ex: SE, US, GB): ");
+        if (fgets(landskod, sizeof(landskod), stdin) == NULL) continue;
+        landskod[strcspn(landskod, "\n")] = '\0';
+
+        // Anslut till server
+        socket_t sock = anslut_till_server(server_adress, server_port);
+        if (sock == OGILTIG_SOCKET) {
+            continue;
+        }
+
+        // Utför vald operation
+        if (val == 1) {
+            begär_aktuellt_vader(sock, stad, landskod);
+        } else {
+            begär_prognos(sock, stad, landskod);
+        }
+
+        // Stäng anslutning
+        stang_socket(sock);
+    }
+
+    printf("\nHejdå!\n");
+    rensa_natverksbibliotek();
+    return 0;
+}

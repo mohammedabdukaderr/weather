@@ -1,0 +1,23 @@
+=== SNABB INSTALLATION AV WSL ===
+
+1. Öppna PowerShell som Administrator:
+   - Tryck Windows-knappen
+   - Skriv "PowerShell"
+   - Högerklicka på "Windows PowerShell"
+   - Välj "Kör som administratör"
+
+2. Kör detta kommando i PowerShell:
+   wsl --install
+
+3. Starta om datorn när det är klart
+
+4. Efter omstart, öppna "Ubuntu" från startmenyn
+
+5. I Ubuntu-terminalen, kör:
+   cd /mnt/c/Users/moham/Downloads/mohammed/vädersystem
+   make run
+
+6. Servern startar! Testa med:
+   curl http://localhost:8080/weather/Stockholm
+
+KLART! 🎉
