@@ -7,6 +7,7 @@
 // Väderdata struktur
 typedef struct {
     char stad[64];
+    char land[8];
     float temperatur;
     float luftfuktighet;
     float vindhastighet;

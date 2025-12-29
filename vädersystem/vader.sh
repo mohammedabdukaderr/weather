@@ -14,7 +14,7 @@ echo ""
 show_weather() {
     local city=$1
     local country=$2
-    ./weather_client_cpp "$city" "$country"
+    ./client/weather_client_cpp "$city" "$country"
     echo ""
 }
 

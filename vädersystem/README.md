@@ -90,8 +90,20 @@ brew install gcc make
 
 ### Bygg och kör
 
+**Alternativ 1: Endast Klient (enklast)**
 ```bash
-# 1. Klona (eller navigera till projektet)
+# Navigera till client-mappen
+cd vädersystem/client
+
+# Bygg och kör interaktiv meny
+make run
+
+# Det är allt! Välj stad från menyn (60+ städer)
+```
+
+**Alternativ 2: Server + Klient**
+```bash
+# 1. Navigera till projektet
 cd vädersystem
 
 # 2. Bygg allt (server + båda klienter)
@@ -100,7 +112,7 @@ make all
 # 3. Hämta API-nyckel
 # Registrera dig på https://openweathermap.org/api (gratis)
 
-# 4. Starta servern
+# 4. Starta servern (i en terminal)
 make run
 # ELLER med egen API-nyckel:
 ./weather_server DIN_API_NYCKEL 8080 1
@@ -108,12 +120,14 @@ make run
 # 5. Testa i webbläsare
 # Öppna: http://localhost:8080/
 
-# 6. Testa klienter (i ny terminal)
-./weather_client Stockholm SE
-./weather_client_cpp London GB
+# 6. Kör klient (i ny terminal)
+cd client
+make run
 ```
 
 ## 📚 Byggkommandon
+
+### Huvudprojekt (vädersystem/)
 
 | Kommando | Beskrivning |
 |----------|-------------|
@@ -125,6 +139,16 @@ make run
 | `make run` | Starta servern |
 | `make clean` | Rensa byggfiler |
 | `make help` | Visa alla kommandon |
+
+### Klient (vädersystem/client/)
+
+| Kommando | Beskrivning |
+|----------|-------------|
+| `make` | Bygg C++-klienten (default) |
+| `make run` | ⭐ Kör interaktiv vädermeny (REKOMMENDERAT) |
+| `make test` | Testa klient med Stockholm |
+| `make clean` | Rensa byggfiler |
+| `make help` | Visa hjälp |
 
 ## 🌐 API Endpoints
 

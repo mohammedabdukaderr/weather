@@ -10,6 +10,10 @@
 #include <assert.h>
 #include <stdbool.h>
 
+// Inkludera headers först
+#include "../include/vaderprotokoll.h"
+#include "../include/json_helper.h"
+
 // Inkludera funktioner vi ska testa (enkelt sätt för unit testing)
 #define JSON_HELPER_C  // Förhindra include-guards
 #include "../src/json_helper.c"
