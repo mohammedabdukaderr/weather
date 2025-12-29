@@ -47,3 +47,4 @@ build/
 /client/
 /tests/test_basic.c
 /weather_op/
+.claude/
