@@ -1,14 +1,49 @@
-# Ignore compiled object files
+# Build artifacts
 *.o
-*.obj
-
-# Ignore caches and local files
-cache.txt
-weather_cache.json
-
-# Ignore local directories
-vader/
-
-# Optional: Windows executables
 *.exe
-*.dll
+*.out
+*.a
+*.so
+weather_server
+weather_client
+weather_client_cpp
+vaderserver.log
+
+# Cache
+cache/
+*.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# API keys
+api_key.txt
+.api_key
+*.key
+secrets.txt
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+build/
+
+# Gamla projekt-filer (ska inte committas)
+/weather.c
+/weather.h
+/index.js
+/json_parser.*
+/main.c
+/vader
+/INSTALLERA.txt
+/client/
+/tests/test_basic.c
+/weather_op/
