@@ -302,37 +302,97 @@ public:
  * ./weather_client Paris FR
  */
 int main(int argc, char* argv[]) {
-    try {
-        // Läs in kommandoradsargument
-        string stad = (argc > 1) ? argv[1] : "Stockholm";
-        string landskod = (argc > 2) ? argv[2] : "SE";
+    // Om kommandoradsargument finns, kör direkt
+    if (argc > 1) {
+        try {
+            string stad = argv[1];
+            string landskod = (argc > 2) ? argv[2] : "SE";
 
-        cout << "╔═══════════════════════════════════════════════════════╗\n";
-        cout << "║          VÄDERKLIENT - C++ VERSION 1.0.0             ║\n";
-        cout << "╚═══════════════════════════════════════════════════════╝\n\n";
+            cout << "╔═══════════════════════════════════════════════════════╗\n";
+            cout << "║          VÄDERKLIENT - C++ VERSION 1.0.0             ║\n";
+            cout << "╚═══════════════════════════════════════════════════════╝\n\n";
 
-        // Skapa klient-objekt (RAII - automatisk resurshantering)
-        NatverksKlient klient;
+            NatverksKlient klient;
+            klient.anslut(SERVER_ADRESS, SERVER_PORT);
 
-        // Anslut till servern
-        klient.anslut(SERVER_ADRESS, SERVER_PORT);
+            cout << "Hämtar väderdata för " << stad << ", " << landskod << "...\n";
+            string json_svar = klient.hamtaVader(stad, landskod);
 
-        // Hämta väderdata
-        cout << "Hämtar väderdata för " << stad << ", " << landskod << "...\n";
-        string json_svar = klient.hamtaVader(stad, landskod);
+            VaderData vader;
+            vader.parseJsonSvar(json_svar);
+            vader.skrivUt();
 
-        // Parsa och visa data
-        VaderData vader;
-        vader.parseJsonSvar(json_svar);
-        vader.skrivUt();
+            return 0;
 
-        return 0;
-
-    } catch (const exception& e) {
-        // C++ exception-hantering - fångar alla fel på ett ställe
-        cerr << "\n❌ FEL: " << e.what() << "\n\n";
-        cerr << "Användning: " << argv[0] << " [stad] [landskod]\n";
-        cerr << "Exempel:    " << argv[0] << " Stockholm SE\n";
-        return 1;
+        } catch (const exception& e) {
+            cerr << "\n❌ FEL: " << e.what() << "\n\n";
+            return 1;
+        }
     }
+
+    // Interaktivt läge
+    cout << "╔═══════════════════════════════════════════════════════╗\n";
+    cout << "║          INTERAKTIV VÄDERKLIENT                      ║\n";
+    cout << "╚═══════════════════════════════════════════════════════╝\n\n";
+    cout << "💡 Ansluter till lokal väderserver på " << SERVER_ADRESS << ":" << SERVER_PORT << "\n";
+    cout << "💡 Servern hämtar data från OpenWeatherMap API\n\n";
+
+    while (true) {
+        cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        cout << "Vad vill du göra?\n";
+        cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+
+        string input;
+        cout << "Skriv stad (eller 'exit' för att avsluta): ";
+        getline(cin, input);
+
+        // Trim whitespace
+        size_t start = input.find_first_not_of(" \t");
+        size_t end = input.find_last_not_of(" \t");
+        if (start != string::npos && end != string::npos) {
+            input = input.substr(start, end - start + 1);
+        }
+
+        if (input == "exit" || input == "quit" || input == "q") {
+            cout << "\n👋 Tack för att du använde väderklienten!\n\n";
+            break;
+        }
+
+        if (input.empty()) {
+            continue;
+        }
+
+        // Parse stad och landskod
+        string stad = input;
+        string landskod = "SE";
+
+        size_t space_pos = input.find(' ');
+        if (space_pos != string::npos) {
+            stad = input.substr(0, space_pos);
+            landskod = input.substr(space_pos + 1);
+            size_t lk_start = landskod.find_first_not_of(" \t");
+            if (lk_start != string::npos) {
+                landskod = landskod.substr(lk_start);
+            }
+        }
+
+        // Hämta väder från servern
+        try {
+            NatverksKlient klient;
+            klient.anslut(SERVER_ADRESS, SERVER_PORT);
+
+            cout << "Hämtar väderdata för " << stad << ", " << landskod << "...\n";
+            string json_svar = klient.hamtaVader(stad, landskod);
+
+            VaderData vader;
+            vader.parseJsonSvar(json_svar);
+            vader.skrivUt();
+
+        } catch (const exception& e) {
+            cerr << "\n❌ FEL: " << e.what() << "\n";
+            cerr << "Kontrollera att servern körs på " << SERVER_ADRESS << ":" << SERVER_PORT << "\n\n";
+        }
+    }
+
+    return 0;
 }

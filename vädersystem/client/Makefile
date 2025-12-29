@@ -28,8 +28,8 @@ else
 endif
 
 # Källfiler
-CLIENT_CPP_SRC = weather_client_standalone.cpp
-CLIENT_CPP_OBJ = weather_client_standalone.o
+CLIENT_CPP_SRC = weather_client.cpp
+CLIENT_CPP_OBJ = weather_client.o
 
 # ============================================================================
 # PHONY TARGETS
@@ -48,6 +48,9 @@ client: $(CLIENT_CPP)
 	@echo ""
 	@echo "✅ C++-klient byggd: $(CLIENT_CPP)"
 	@echo ""
+	@echo "💡 Kräver att servern körs på localhost:8080"
+	@echo "💡 Starta server: cd .. && make run"
+	@echo ""
 	@echo "Kör 'make run' för interaktiv meny"
 	@echo "Kör './$(CLIENT_CPP) Stockholm SE' för direkt användning"
 	@echo ""
@@ -62,7 +65,7 @@ $(CLIENT_CPP): $(CLIENT_CPP_OBJ)
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Kompilera C++-fil
-weather_client_standalone.o: weather_client_standalone.cpp
+weather_client.o: weather_client.cpp
 	@echo "Kompilerar $<..."
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -74,13 +77,18 @@ weather_client_standalone.o: weather_client_standalone.cpp
 run: client
 	@echo ""
 	@echo "╔═══════════════════════════════════════════════════════╗"
-	@echo "║          STARTAR STANDALONE VÄDERKLIENT              ║"
+	@echo "║          STARTAR INTERAKTIV VÄDERKLIENT              ║"
 	@echo "╚═══════════════════════════════════════════════════════╝"
 	@echo ""
-	@echo "💡 Hämtar data DIREKT från OpenWeatherMap API"
-	@echo "💡 Ingen server krävs - helt fristående klient!"
+	@echo "💡 Ansluter till server på localhost:8080"
+	@echo "💡 Servern hämtar data från OpenWeatherMap API"
+	@echo "💡 Skriv stad-namnet för att få vädret!"
+	@echo "💡 Exempel: 'Luleå' eller 'London GB'"
 	@echo ""
-	@./$(CLIENT_CPP) Stockholm SE
+	@echo "⚠️  OBS: Kontrollera att servern körs först!"
+	@echo "   Starta server: cd .. && make run"
+	@echo ""
+	@./$(CLIENT_CPP)
 
 # Testa klient med Stockholm
 test: client
