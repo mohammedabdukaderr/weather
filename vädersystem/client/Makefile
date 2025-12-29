@@ -29,7 +29,7 @@ endif
 
 # Källfiler
 CLIENT_CPP_SRC = weather_client.cpp
-CLIENT_CPP_OBJ = weather_client.o
+CLIENT_CPP_OBJ = weather_client_cpp.o
 
 # ============================================================================
 # PHONY TARGETS
@@ -65,7 +65,7 @@ $(CLIENT_CPP): $(CLIENT_CPP_OBJ)
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Kompilera C++-fil
-weather_client.o: weather_client.cpp
+weather_client_cpp.o: weather_client.cpp
 	@echo "Kompilerar $<..."
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 

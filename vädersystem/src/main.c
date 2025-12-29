@@ -58,6 +58,7 @@ void skapa_vader_json(const VaderData* data, char* json_buffer, size_t storlek) 
     snprintf(json_buffer, storlek,
              "{\n"
              "  \"stad\": \"%s\",\n"                  // Stadens namn som text
+             "  \"land\": \"%s\",\n"                  // Landskod (t.ex. SE, GB, US)
              "  \"temperatur\": %.1f,\n"              // Temperatur med 1 decimal (Celsius)
              "  \"luftfuktighet\": %.0f,\n"           // Luftfuktighet utan decimaler (%)
              "  \"vindhastighet\": %.1f,\n"           // Vindhastighet med 1 decimal (m/s)
@@ -67,6 +68,7 @@ void skapa_vader_json(const VaderData* data, char* json_buffer, size_t storlek) 
              "  \"tidsstampel\": %lld\n"              // Unix-tidsstämpel (sekunder sedan 1970)
              "}",
              data->stad,
+             data->land,
              data->temperatur,
              data->luftfuktighet,
              data->vindhastighet,
@@ -116,6 +118,7 @@ void skapa_prognos_json(const VaderPrognos* prognos, char* json_buffer, size_t s
         skrivet = snprintf(ptr, kvarvarande,
                           "    {\n"
                           "      \"stad\": \"%s\",\n"
+                          "      \"land\": \"%s\",\n"
                           "      \"temperatur\": %.1f,\n"
                           "      \"luftfuktighet\": %.0f,\n"
                           "      \"vindhastighet\": %.1f,\n"
@@ -125,6 +128,7 @@ void skapa_prognos_json(const VaderPrognos* prognos, char* json_buffer, size_t s
                           "      \"tidsstampel\": %lld\n"
                           "    }%s\n",                      // Komma efter alla utom sista objektet
                           dag->stad,
+                          dag->land,
                           dag->temperatur,
                           dag->luftfuktighet,
                           dag->vindhastighet,
@@ -446,6 +450,9 @@ int main(int argc, char* argv[]) {
         socket_t klient = acceptera_klient(&server);
 
         if (klient != OGILTIG_SOCKET) {
+            // Logga att en klient har anslutit
+            LOGG_INFO("🔌 Ny klient anslöt (#%d)", klient_raknare + 1);
+
             // Hantera klientens HTTP-request och skicka svar
             hantera_http_klient(klient, api_nyckel);
 

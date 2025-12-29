@@ -18,7 +18,7 @@ using namespace std;
 // ============================================================================
 // KONFIGURATIONSKONSTANTER
 // ============================================================================
-constexpr const char* SERVER_ADRESS = "127.0.0.1";
+constexpr const char *SERVER_ADRESS = "127.0.0.1";
 constexpr int SERVER_PORT = 8080;
 constexpr size_t BUFFER_STORLEK = 8192;
 
@@ -27,7 +27,8 @@ constexpr size_t BUFFER_STORLEK = 8192;
 // ============================================================================
 // Enkel JSON-parser som använder C++ string-funktioner
 // I produktion skulle man använda ett bibliotek som nlohmann/json
-class JsonParser {
+class JsonParser
+{
 public:
     /**
      * Parsar ett flyttal från JSON-sträng
@@ -38,17 +39,19 @@ public:
      *
      * Exempel: parseFloat("{\"temp\": 23.5}", "temp") returnerar 23.5
      */
-    static float parseFloat(const string& json, const string& nyckel) {
+    static float parseFloat(const string &json, const string &nyckel)
+    {
         // Använd C++ string för att bygga sökmönster
         string sokstrang = "\"" + nyckel + "\": ";
 
         // string::find() returnerar position eller string::npos om inte funnen
         size_t pos = json.find(sokstrang);
-        if (pos == string::npos) return 0.0f;
+        if (pos == string::npos)
+            return 0.0f;
 
         // Hoppa förbi söksträng och konvertera värdet
         pos += sokstrang.length();
-        return stof(json.substr(pos));  // stof = string to float
+        return stof(json.substr(pos)); // stof = string to float
     }
 
     /**
@@ -60,19 +63,22 @@ public:
      *
      * Exempel: parseString("{\"stad\": \"Stockholm\"}", "stad") returnerar "Stockholm"
      */
-    static string parseString(const string& json, const string& nyckel) {
+    static string parseString(const string &json, const string &nyckel)
+    {
         // Sökmönster för string-värden: "nyckel": "
         string sokstrang = "\"" + nyckel + "\": \"";
 
         size_t start = json.find(sokstrang);
-        if (start == string::npos) return "";
+        if (start == string::npos)
+            return "";
 
         // Flytta till början av värdet
         start += sokstrang.length();
 
         // Hitta avslutande citattecken
         size_t slut = json.find('"', start);
-        if (slut == string::npos) return "";
+        if (slut == string::npos)
+            return "";
 
         // Extrahera substrängen mellan citattecknen
         return json.substr(start, slut - start);
@@ -83,7 +89,8 @@ public:
 // VÄDERDATA-KLASS
 // ============================================================================
 // Representerar väderdata från servern med getters och formaterad utskrift
-class VaderData {
+class VaderData
+{
 private:
     string stad;
     string land;
@@ -109,7 +116,8 @@ public:
      * - JsonParser är en statisk utility-klass (mer organiserat än globala funktioner)
      * - Ingen manuell minneshantering behövs
      */
-    void parseJsonSvar(const string& json_svar) {
+    void parseJsonSvar(const string &json_svar)
+    {
         stad = JsonParser::parseString(json_svar, "stad");
         land = JsonParser::parseString(json_svar, "land");
         temperatur = JsonParser::parseFloat(json_svar, "temperatur");
@@ -123,6 +131,21 @@ public:
     }
 
     /**
+     * Kontrollerar om väderdata är giltig
+     *
+     * @return true om data innehåller giltig väderinformation, annars false
+     *
+     * VARFÖR C++ ÄR BRA HÄR:
+     * - Enkel validering med string::empty() (inga null-pekarkontroller)
+     * - Tydlig bool-returtyp (inte int som i C)
+     */
+    bool arGiltig() const
+    {
+        // Data är giltig om staden har ett namn och beskrivning finns
+        return !stad.empty() && !beskrivning.empty();
+    }
+
+    /**
      * Skriver ut väderdata i ett snyggt format till konsolen
      *
      * VARFÖR C++ ÄR BRA HÄR:
@@ -130,7 +153,8 @@ public:
      * - Enklare strängkonkatenering med operator<<
      * - Automatisk minneshantering
      */
-    void skrivUt() const {
+    void skrivUt() const
+    {
         cout << "\n╔═══════════════════════════════════════════════════════╗\n";
         cout << "║              VÄDERRAPPORT - C++ KLIENT               ║\n";
         cout << "╚═══════════════════════════════════════════════════════╝\n\n";
@@ -142,7 +166,8 @@ public:
         cout << "🔽 Lufttryck:     " << lufttryck << " hPa\n";
         cout << "☁️  Beskrivning:  " << beskrivning << "\n";
 
-        if (fran_cache) {
+        if (fran_cache)
+        {
             cout << "\n💾 Data från cache (sparad tidigare)\n";
         }
 
@@ -155,7 +180,8 @@ public:
 // ============================================================================
 // Hanterar TCP-anslutning och HTTP-kommunikation med servern
 // Använder RAII (Resource Acquisition Is Initialization) för socket-hantering
-class NatverksKlient {
+class NatverksKlient
+{
 private:
     socket_t socket_fd;
     bool ansluten;
@@ -169,9 +195,11 @@ public:
      * - Destruktorn städar upp automatiskt
      * - Ingen risk att glömma WSACleanup() eller closesocket()
      */
-    NatverksKlient() : socket_fd(OGILTIG_SOCKET), ansluten(false) {
+    NatverksKlient() : socket_fd(OGILTIG_SOCKET), ansluten(false)
+    {
         // Initialisera Winsock (Windows) eller gör ingenting (Linux)
-        if (initiera_natverksbibliotek() != 0) {
+        if (initiera_natverksbibliotek() != 0)
+        {
             throw runtime_error("Kunde inte initiera nätverksbibliotek");
         }
     }
@@ -182,8 +210,10 @@ public:
      * Detta är C++:s stora fördel över C - automatisk resurshantering!
      * Vi behöver aldrig explicit anropa detta, C++ gör det åt oss
      */
-    ~NatverksKlient() {
-        if (ansluten && socket_fd != OGILTIG_SOCKET) {
+    ~NatverksKlient()
+    {
+        if (ansluten && socket_fd != OGILTIG_SOCKET)
+        {
             stang_socket(socket_fd);
         }
         rensa_natverksbibliotek();
@@ -202,28 +232,31 @@ public:
      * - Destruktorn anropas automatiskt även vid exception
      * - Ingen risk för minnesläckor
      */
-    void anslut(const string& adress, int port) {
+    void anslut(const string &adress, int port)
+    {
         // Skapa TCP-socket (IPv4, stream-baserad, TCP-protokoll)
         socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (socket_fd == OGILTIG_SOCKET) {
+        if (socket_fd == OGILTIG_SOCKET)
+        {
             throw runtime_error("Kunde inte skapa socket");
         }
 
         // Konfigurera serveradress
         struct sockaddr_in server_addr;
         memset(&server_addr, 0, sizeof(server_addr));
-        server_addr.sin_family = AF_INET;               // IPv4
-        server_addr.sin_port = htons(port);             // Port i network byte order
+        server_addr.sin_family = AF_INET;   // IPv4
+        server_addr.sin_port = htons(port); // Port i network byte order
 
-        // Konvertera IP-adress från text till binär form
-        #ifdef _WIN32
-            server_addr.sin_addr.s_addr = inet_addr(adress.c_str());
-        #else
-            inet_pton(AF_INET, adress.c_str(), &server_addr.sin_addr);
-        #endif
+// Konvertera IP-adress från text till binär form
+#ifdef _WIN32
+        server_addr.sin_addr.s_addr = inet_addr(adress.c_str());
+#else
+        inet_pton(AF_INET, adress.c_str(), &server_addr.sin_addr);
+#endif
 
         // Anslut till servern
-        if (connect(socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_FEL) {
+        if (connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_FEL)
+        {
             stang_socket(socket_fd);
             throw runtime_error("Kunde inte ansluta till server");
         }
@@ -245,18 +278,20 @@ public:
      * Connection: close\r\n
      * \r\n
      */
-    string hamtaVader(const string& stad, const string& landskod) {
+    string hamtaVader(const string &stad, const string &landskod)
+    {
         // Använd stringstream för att bygga HTTP-request (mer elegant än sprintf)
         ostringstream request_builder;
         request_builder << "GET /weather?city=" << stad
-                       << "&country=" << landskod << " HTTP/1.1\r\n"
-                       << "Host: localhost:" << SERVER_PORT << "\r\n"
-                       << "Connection: close\r\n\r\n";
+                        << "&country=" << landskod << " HTTP/1.1\r\n"
+                        << "Host: localhost:" << SERVER_PORT << "\r\n"
+                        << "Connection: close\r\n\r\n";
 
         string request = request_builder.str();
 
         // Skicka request till servern
-        if (send(socket_fd, request.c_str(), request.length(), 0) == SOCKET_FEL) {
+        if (send(socket_fd, request.c_str(), request.length(), 0) == SOCKET_FEL)
+        {
             throw runtime_error("Kunde inte skicka request till server");
         }
 
@@ -266,20 +301,23 @@ public:
         int mottaget;
 
         // Läs tills servern stänger anslutningen eller bufferten är full
-        while ((mottaget = recv(socket_fd, buffer, sizeof(buffer) - 1, 0)) > 0) {
+        while ((mottaget = recv(socket_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
+        {
             buffer[mottaget] = '\0';
-            svar += buffer;  // C++ string-konkatenering
+            svar += buffer; // C++ string-konkatenering
         }
 
-        if (mottaget == SOCKET_FEL) {
+        if (mottaget == SOCKET_FEL)
+        {
             throw runtime_error("Fel vid mottagning av data");
         }
 
         // Extrahera JSON-body från HTTP-svaret
         // HTTP-svar har format: headers\r\n\r\nbody
         size_t body_start = svar.find("\r\n\r\n");
-        if (body_start != string::npos) {
-            return svar.substr(body_start + 4);  // Hoppa över \r\n\r\n
+        if (body_start != string::npos)
+        {
+            return svar.substr(body_start + 4); // Hoppa över \r\n\r\n
         }
 
         return svar;
@@ -301,98 +339,114 @@ public:
  * ./weather_client London GB
  * ./weather_client Paris FR
  */
-int main(int argc, char* argv[]) {
-    // Om kommandoradsargument finns, kör direkt
-    if (argc > 1) {
-        try {
+int main(int argc, char *argv[])
+{
+    try
+    {
+        // Om kommandoradsargument finns, kör direkt (för kompatibilitet med vader.sh)
+        if (argc > 1)
+        {
             string stad = argv[1];
             string landskod = (argc > 2) ? argv[2] : "SE";
 
-            cout << "╔═══════════════════════════════════════════════════════╗\n";
-            cout << "║          VÄDERKLIENT - C++ VERSION 1.0.0             ║\n";
-            cout << "╚═══════════════════════════════════════════════════════╝\n\n";
-
             NatverksKlient klient;
             klient.anslut(SERVER_ADRESS, SERVER_PORT);
 
-            cout << "Hämtar väderdata för " << stad << ", " << landskod << "...\n";
             string json_svar = klient.hamtaVader(stad, landskod);
-
             VaderData vader;
             vader.parseJsonSvar(json_svar);
+
+            // Kontrollera om data är giltig
+            if (!vader.arGiltig())
+            {
+                cerr << "\n❌ Ogiltigt stadnamn: " << stad << "\n";
+                cerr << "Försök igen med ett giltigt stadnamn.\n\n";
+                return 1;
+            }
+
             vader.skrivUt();
-
             return 0;
-
-        } catch (const exception& e) {
-            cerr << "\n❌ FEL: " << e.what() << "\n\n";
-            return 1;
-        }
-    }
-
-    // Interaktivt läge
-    cout << "╔═══════════════════════════════════════════════════════╗\n";
-    cout << "║          INTERAKTIV VÄDERKLIENT                      ║\n";
-    cout << "╚═══════════════════════════════════════════════════════╝\n\n";
-    cout << "💡 Ansluter till lokal väderserver på " << SERVER_ADRESS << ":" << SERVER_PORT << "\n";
-    cout << "💡 Servern hämtar data från OpenWeatherMap API\n\n";
-
-    while (true) {
-        cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        cout << "Vad vill du göra?\n";
-        cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
-
-        string input;
-        cout << "Skriv stad (eller 'exit' för att avsluta): ";
-        getline(cin, input);
-
-        // Trim whitespace
-        size_t start = input.find_first_not_of(" \t");
-        size_t end = input.find_last_not_of(" \t");
-        if (start != string::npos && end != string::npos) {
-            input = input.substr(start, end - start + 1);
         }
 
-        if (input == "exit" || input == "quit" || input == "q") {
-            cout << "\n👋 Tack för att du använde väderklienten!\n\n";
-            break;
-        }
+        // Interaktivt läge
+        cout << "╔═══════════════════════════════════════════════════════╗\n";
+        cout << "║          INTERAKTIV VÄDERKLIENT                      ║\n";
+        cout << "╚═══════════════════════════════════════════════════════╝\n\n";
+        cout << "💡 Ansluter till lokal väderserver på " << SERVER_ADRESS << ":" << SERVER_PORT << "\n";
+        cout << "💡 Servern hämtar data från OpenWeatherMap API\n\n";
 
-        if (input.empty()) {
-            continue;
-        }
+        while (true)
+        {
+            cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+            cout << "Vad vill du göra?\n";
+            cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+            cout << "Skriv stad (eller 'exit' för att avsluta): ";
 
-        // Parse stad och landskod
-        string stad = input;
-        string landskod = "SE";
+            string input;
+            getline(cin, input);
 
-        size_t space_pos = input.find(' ');
-        if (space_pos != string::npos) {
-            stad = input.substr(0, space_pos);
-            landskod = input.substr(space_pos + 1);
-            size_t lk_start = landskod.find_first_not_of(" \t");
-            if (lk_start != string::npos) {
-                landskod = landskod.substr(lk_start);
+            // Avsluta om användaren skriver "exit" eller "quit"
+            if (input == "exit" || input == "quit" || input == "q")
+            {
+                cout << "\n👋 Tack för att du använde väderklienten!\n\n";
+                break;
+            }
+
+            // Skippa tomma inputs
+            if (input.empty())
+            {
+                continue;
+            }
+
+            // Parsa input (stad och eventuell landskod)
+            string stad, landskod = "SE";
+            size_t space_pos = input.find(' ');
+            if (space_pos != string::npos)
+            {
+                stad = input.substr(0, space_pos);
+                landskod = input.substr(space_pos + 1);
+            }
+            else
+            {
+                stad = input;
+            }
+
+            try
+            {
+                // Anslut och hämta väderdata
+                NatverksKlient klient;
+                klient.anslut(SERVER_ADRESS, SERVER_PORT);
+
+                cout << "\nHämtar väderdata för " << stad << ", " << landskod << "...\n";
+                string json_svar = klient.hamtaVader(stad, landskod);
+
+                // Parsa och validera data
+                VaderData vader;
+                vader.parseJsonSvar(json_svar);
+
+                // Kontrollera om data är giltig
+                if (!vader.arGiltig())
+                {
+                    cout << "\n❌ Ogiltigt stadnamn: " << stad << "\n";
+                    cout << "Försök igen med ett giltigt stadnamn.\n\n";
+                    continue;
+                }
+
+                // Visa väderdata
+                vader.skrivUt();
+            }
+            catch (const exception &e)
+            {
+                cerr << "\n❌ FEL: " << e.what() << "\n\n";
             }
         }
 
-        // Hämta väder från servern
-        try {
-            NatverksKlient klient;
-            klient.anslut(SERVER_ADRESS, SERVER_PORT);
-
-            cout << "Hämtar väderdata för " << stad << ", " << landskod << "...\n";
-            string json_svar = klient.hamtaVader(stad, landskod);
-
-            VaderData vader;
-            vader.parseJsonSvar(json_svar);
-            vader.skrivUt();
-
-        } catch (const exception& e) {
-            cerr << "\n❌ FEL: " << e.what() << "\n";
-            cerr << "Kontrollera att servern körs på " << SERVER_ADRESS << ":" << SERVER_PORT << "\n\n";
-        }
+        return 0;
     }
-
-    return 0;
+    catch (const exception &e)
+    {
+        // C++ exception-hantering - fångar alla fel på ett ställe
+        cerr << "\n❌ FEL: " << e.what() << "\n\n";
+        return 1;
+    }
 }
