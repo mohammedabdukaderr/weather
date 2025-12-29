@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "json_helper.h"  // Egna funktioner för JSON-parsning
 #include <string.h>        // För strängfunktioner: strstr, strlen, strchr, memcpy
 #include <stdlib.h>        // För strto*-funktioner: strtod, strtol

@@ -14,7 +14,7 @@ typedef enum {
 // HTTP-request struktur
 typedef struct {
     HttpMetod metod;               // HTTP-metod (GET, POST)
-    char sokväg[256];              // URL-sökväg (ex: "/weather")
+    char sokvag[256];              // URL-sökväg (ex: "/weather")
     char query[512];               // Query-parametrar (ex: "city=Stockholm&country=SE")
     char body[1024];               // Request body (för POST)
 } HttpRequest;

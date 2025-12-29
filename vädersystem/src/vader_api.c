@@ -47,7 +47,7 @@ static bool skicka_http_get(const char* host, int port, const char* path,
 
     // Kopiera IP-adressen från DNS-svaret till vår adress-struktur
     // h_addr pekar på den första IP-adressen i listan
-    memcpy(&server_addr.sin_addr.s_addr, server->h_addr, (size_t)server->h_length);
+    memcpy(&server_addr.sin_addr.s_addr, server->h_addr_list[0], (size_t)server->h_length);
 
     // Sätt portnummer (konvertera från host byte order till network byte order)
     server_addr.sin_port = htons((uint16_t)port);

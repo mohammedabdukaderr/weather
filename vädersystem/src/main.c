@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE      // För usleep() på Linux
 #include "tcp_server.h"      // För TCP-serverfunktionalitet
 #include "vader_api.h"       // För att hämta väderdata från OpenWeatherMap
 #include "cache.h"           // För att cacha väderdata lokalt
@@ -8,6 +9,8 @@
 #include <string.h>          // För strcmp, strlen
 #include <signal.h>          // För signal-hantering (Ctrl+C)
 #include <stdbool.h>         // För bool, true, false
+#include <stdlib.h>          // För atoi
+#include <unistd.h>          // För usleep (Unix/Linux)
 
 // Global flagga för att kontrollera serverns huvudloop
 // Sätts till false när användaren trycker Ctrl+C för att stoppa servern
@@ -305,10 +308,57 @@ void hantera_http_klient(socket_t klient_socket, const char* api_nyckel) {
 
         send(klient_socket, svar_buffer, (int)strlen(svar_buffer), 0);
 
+    // Hantera root endpoint (/) - Visa API-dokumentation
+    } else if (strcmp(request.sokvag, "/") == 0 && request.metod == HTTP_GET) {
+        LOGG_INFO("HTTP GET / (API-dokumentation)");
+
+        // Skapa ett välkomstmeddelande med tillgängliga endpoints
+        snprintf(json_buffer, sizeof(json_buffer),
+                 "{\n"
+                 "  \"service\": \"Vädersystem API\",\n"
+                 "  \"version\": \"1.0.0\",\n"
+                 "  \"beskrivning\": \"HTTP/JSON väder-API med OpenWeatherMap integration\",\n"
+                 "  \"endpoints\": [\n"
+                 "    {\n"
+                 "      \"metod\": \"GET\",\n"
+                 "      \"sokvag\": \"/weather\",\n"
+                 "      \"parametrar\": \"city (obligatorisk), country (valfri, standard: SE)\",\n"
+                 "      \"exempel\": \"/weather?city=Stockholm&country=SE\",\n"
+                 "      \"beskrivning\": \"Hämta aktuellt väder för en stad\"\n"
+                 "    },\n"
+                 "    {\n"
+                 "      \"metod\": \"GET\",\n"
+                 "      \"sokvag\": \"/forecast\",\n"
+                 "      \"parametrar\": \"city (obligatorisk), country (valfri, standard: SE)\",\n"
+                 "      \"exempel\": \"/forecast?city=Stockholm&country=SE\",\n"
+                 "      \"beskrivning\": \"Hämta 5-dagars väderprognos för en stad\"\n"
+                 "    }\n"
+                 "  ],\n"
+                 "  \"cache\": \"30 minuter TTL\",\n"
+                 "  \"landskoder\": \"ISO 3166-1 alpha-2 (SE, GB, US, FR, etc.)\"\n"
+                 "}");
+
+        skapa_http_response(svar_buffer, sizeof(svar_buffer), 200, json_buffer);
+        send(klient_socket, svar_buffer, (int)strlen(svar_buffer), 0);
+
     } else {
-        // Okänd endpoint eller metod - skicka 404 Not Found
+        // Okänd endpoint eller metod - skicka 404 Not Found med hjälpsam information
         LOGG_VARNING("Okänd endpoint: %s", request.sokvag);
-        skapa_fel_json(404, "Endpoint hittades inte", json_buffer, sizeof(json_buffer));
+
+        // Ge användaren en hint om tillgängliga endpoints
+        snprintf(json_buffer, sizeof(json_buffer),
+                 "{\n"
+                 "  \"fel\": true,\n"
+                 "  \"felkod\": 404,\n"
+                 "  \"meddelande\": \"Endpoint hittades inte: %s\",\n"
+                 "  \"tillgangliga_endpoints\": [\n"
+                 "    \"GET /\",\n"
+                 "    \"GET /weather?city=STAD&country=LANDSKOD\",\n"
+                 "    \"GET /forecast?city=STAD&country=LANDSKOD\"\n"
+                 "  ]\n"
+                 "}",
+                 request.sokvag);
+
         skapa_http_response(svar_buffer, sizeof(svar_buffer), 404, json_buffer);
         send(klient_socket, svar_buffer, (int)strlen(svar_buffer), 0);
     }

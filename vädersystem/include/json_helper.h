@@ -2,6 +2,7 @@
 #define JSON_HELPER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 // Enkel JSON-hjälpbibliotek för att parsa OpenWeatherMap-svar
 // Begränsat till de fält vi behöver
